@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Attendance - Labour Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-edit"></i> Edit Attendance Record
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-user"></i> {{ attendance.user.first_name }} {{ attendance.user.last_name }} - {{ attendance.date|date:"d-m-Y" }}
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if user.role != 'user3' %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.in1.id_for_label }}" class="form-label">IN1</label>
+                            {{ form.in1 }}
+                            {% if form.in1.errors %}
+                            <div class="text-danger small">{{ form.in1.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.out1.id_for_label }}" class="form-label">OUT1</label>
+                            {{ form.out1 }}
+                            {% if form.out1.errors %}
+                            <div class="text-danger small">{{ form.out1.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.in2.id_for_label }}" class="form-label">IN2</label>
+                            {{ form.in2 }}
+                            {% if form.in2.errors %}
+                            <div class="text-danger small">{{ form.in2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.out2.id_for_label }}" class="form-label">OUT2</label>
+                            {{ form.out2 }}
+                            {% if form.out2.errors %}
+                            <div class="text-danger small">{{ form.out2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.in3.id_for_label }}" class="form-label">IN3</label>
+                            {{ form.in3 }}
+                            {% if form.in3.errors %}
+                            <div class="text-danger small">{{ form.in3.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.out3.id_for_label }}" class="form-label">OUT3</label>
+                            {{ form.out3 }}
+                            {% if form.out3.errors %}
+                            <div class="text-danger small">{{ form.out3.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.hours_worked.id_for_label }}" class="form-label">Hours Worked</label>
+                            {{ form.hours_worked }}
+                            {% if form.hours_worked.errors %}
+                            <div class="text-danger small">{{ form.hours_worked.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.overtime.id_for_label }}" class="form-label">Overtime</label>
+                            {{ form.overtime }}
+                            {% if form.overtime.errors %}
+                            <div class="text-danger small">{{ form.overtime.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="text-danger small">{{ form.status.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if user.role == 'user2' %}
+                    <div class="mb-3">
+                        <label for="{{ form.supervisor_remarks.id_for_label }}" class="form-label">Supervisor Remarks</label>
+                        {{ form.supervisor_remarks }}
+                        {% if form.supervisor_remarks.errors %}
+                        <div class="text-danger small">{{ form.supervisor_remarks.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if user.role == 'user3' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> As an employee, you can only add personal remarks to your attendance records.
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Date:</strong> {{ attendance.date|date:"d-m-Y" }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong> {{ attendance.status }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <strong>IN1:</strong> {{ attendance.in1|time:"H:i"|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>OUT1:</strong> {{ attendance.out1|time:"H:i"|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>IN2:</strong> {{ attendance.in2|time:"H:i"|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>OUT2:</strong> {{ attendance.out2|time:"H:i"|default:"-" }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <strong>IN3:</strong> {{ attendance.in3|time:"H:i"|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>OUT3:</strong> {{ attendance.out3|time:"H:i"|default:"-" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Hours:</strong> {{ attendance.get_hours_formatted }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Overtime:</strong> {{ attendance.get_overtime_formatted }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if user.role == 'user3' %}
+                    <div class="mb-3">
+                        <label for="{{ form.employee_remarks.id_for_label }}" class="form-label">Your Remarks</label>
+                        {{ form.employee_remarks }}
+                        {% if form.employee_remarks.errors %}
+                        <div class="text-danger small">{{ form.employee_remarks.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {% if user.role == 'user3' %}Save Remarks{% else %}Save Changes{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

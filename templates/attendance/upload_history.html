@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload History - Labour Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-history"></i> Upload History</h2>
+            <a href="{% url 'upload_attendance' %}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> New Upload
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-table"></i> Upload Statistics
+            </div>
+            <div class="card-body">
+                {% if uploads %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>File Name</th>
+                                <th>Upload Date</th>
+                                <th>Uploaded By</th>
+                                <th>Total Rows</th>
+                                <th>Success</th>
+                                <th>Failed</th>
+                                <th>Success Rate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for upload in uploads %}
+                            <tr>
+                                <td>
+                                    <i class="fas fa-file-csv text-success me-2"></i>
+                                    {{ upload.filename }}
+                                </td>
+                                <td>{{ upload.upload_date|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <i class="fas fa-user me-1"></i>
+                                    {{ upload.uploaded_by.username }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ upload.total_rows }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ upload.accepted_rows }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ upload.rejected_rows }}</span>
+                                </td>
+                                <td>
+                                    {% if upload.total_rows > 0 %}
+                                    {% widthratio upload.accepted_rows upload.total_rows 100 as success_rate %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: {{ success_rate }}%"></div>
+                                        </div>
+                                        <small>{{ success_rate }}%</small>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if upload.rejected_rows > 0 and upload.error_file %}
+                                    <a href="{{ upload.error_file.url }}" class="btn btn-outline-danger btn-sm" title="Download Error File">
+                                        <i class="fas fa-download"></i> Errors
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">No errors</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if uploads.has_other_pages %}
+                <nav aria-label="Upload history pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if uploads.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ uploads.previous_page_number }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in uploads.paginator.page_range %}
+                        {% if uploads.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > uploads.number|add:'-3' and num < uploads.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if uploads.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ uploads.next_page_number }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-upload text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3 text-muted">No Upload History</h4>
+                    <p class="text-muted">You haven't uploaded any attendance data yet.</p>
+                    <a href="{% url 'upload_attendance' %}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Your First File
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if uploads %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Uploads</h6>
+                        <h3>{{ uploads.paginator.count }}</h3>
+                    </div>
+                    <i class="fas fa-upload fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Success</h6>
+                        <h3>
+                            {% for upload in uploads %}
+                            {% add upload.accepted_rows as total_success %}
+                            {% endfor %}
+                            {{ total_success|default:0 }}
+                        </h3>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Errors</h6>
+                        <h3>
+                            {% for upload in uploads %}
+                            {% add upload.rejected_rows as total_errors %}
+                            {% endfor %}
+                            {{ total_errors|default:0 }}
+                        </h3>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Processed</h6>
+                        <h3>
+                            {% for upload in uploads %}
+                            {% add upload.total_rows as total_processed %}
+                            {% endfor %}
+                            {{ total_processed|default:0 }}
+                        </h3>
+                    </div>
+                    <i class="fas fa-database fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

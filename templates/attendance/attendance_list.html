@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance - Labour Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-calendar-check"></i> Attendance Records</h2>
+            <div>
+                {% if user.role in 'master,user1' %}
+                <a href="{% url 'upload_attendance' %}" class="btn btn-success">
+                    <i class="fas fa-upload"></i> Upload
+                </a>
+                {% endif %}
+                {% if user.role != 'user3' %}
+                <a href="{% url 'export_attendance' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Export
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="filter-form">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ form.start_date.label_tag }}
+                    {{ form.start_date }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.end_date.label_tag }}
+                    {{ form.end_date }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.status.label_tag }}
+                    {{ form.status }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.employee.label_tag }}
+                    {{ form.employee }}
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>EP Number</th>
+                                <th>Date</th>
+                                <th>IN1</th>
+                                <th>OUT1</th>
+                                <th>Hours</th>
+                                <th>Overtime</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_records %}
+                            <tr>
+                                <td>
+                                    <strong>{{ record.user.first_name }} {{ record.user.last_name }}</strong>
+                                    {% if record.user.company_name %}
+                                    <br><small class="text-muted">{{ record.user.company_name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ record.user.ep_number }}</td>
+                                <td>{{ record.date|date:"d-m-Y" }}</td>
+                                <td>{{ record.in1|time:"H:i"|default:'-' }}</td>
+                                <td>{{ record.out1|time:"H:i"|default:'-' }}</td>
+                                <td>{{ record.get_hours_formatted }}</td>
+                                <td>{{ record.get_overtime_formatted }}</td>
+                                <td>
+                                    <span class="badge status-{{ record.status }} status-badge">
+                                        {{ record.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if user.role in 'user2,user1,master' %}
+                                    <a href="{% url 'edit_attendance' record.pk %}" class="btn btn-outline-primary btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% elif user.role == 'user3' %}
+                                    <a href="{% url 'edit_attendance' record.pk %}" class="btn btn-outline-secondary btn-sm" title="Add Remarks">
+                                        <i class="fas fa-comment"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if record.supervisor_remarks or record.employee_remarks %}
+                                    <button class="btn btn-outline-info btn-sm" title="View Remarks" data-bs-toggle="modal" data-bs-target="#remarksModal{{ record.pk }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">No attendance records found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if attendance_records.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if attendance_records.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_records.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in attendance_records.paginator.page_range %}
+                        {% if attendance_records.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > attendance_records.number|add:'-3' and num < attendance_records.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if attendance_records.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_records.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remarks Modals -->
+{% for record in attendance_records %}
+{% if record.supervisor_remarks or record.employee_remarks %}
+<div class="modal fade" id="remarksModal{{ record.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remarks - {{ record.user.first_name }} {{ record.user.last_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if record.supervisor_remarks %}
+                <div class="mb-3">
+                    <strong>Supervisor Remarks:</strong>
+                    <p class="mt-1">{{ record.supervisor_remarks }}</p>
+                </div>
+                {% endif %}
+                {% if record.employee_remarks %}
+                <div>
+                    <strong>Employee Remarks:</strong>
+                    <p class="mt-1">{{ record.employee_remarks }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

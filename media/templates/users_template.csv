@@ -1,0 +1,4 @@
+Role,EP Number,Name,Company Name,Username,Password,Email,Start Date,End Date,Plant,Department,Trade,Skill
+user1,ADMIN001,Admin User,ABC Company,admin001,admin123,admin@abc.com,2024-01-01,,Plant 1,Administration,,
+user2,SUP001,Supervisor One,ABC Company,sup001,sup123,sup1@abc.com,2024-01-01,,Plant 1,Production,Supervisor,
+user3,EMP001,Employee One,ABC Company,,,emp1@abc.com,2024-01-01,,Plant 1,Production,Welder,Skilled

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Labour Management{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-tachometer-alt"></i> Dashboard
+<small class="text-muted ms-2">{{ user.get_role_display }}</small>
+{% endblock %}
+
+{% block content %}
+
+{% if user.role == 'master' %}
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-building fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_companies }}</div>
+                <div>Companies</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_users }}</div>
+                <div>Total Users</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-upload"></i> Recent Uploads
+            </div>
+            <div class="card-body">
+                {% for record in recent_uploads %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ record.user.username }}</strong>
+                        <small class="text-muted">{{ record.date }}</small>
+                    </div>
+                    <span class="badge status-{{ record.status }} status-badge">{{ record.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No recent uploads</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.role == 'user1' %}
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-tie fa-2x mb-2"></i>
+                <div class="stats-number">{{ company_supervisors }}</div>
+                <div>Supervisors</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-hard-hat fa-2x mb-2"></i>
+                <div class="stats-number">{{ company_employees }}</div>
+                <div>Employees</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-check"></i> Recent Attendance
+            </div>
+            <div class="card-body">
+                {% for record in recent_attendance %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ record.user.first_name }} {{ record.user.last_name }}</strong>
+                        <small class="text-muted">{{ record.date }}</small>
+                    </div>
+                    <span class="badge status-{{ record.status }} status-badge">{{ record.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No recent attendance</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.role == 'user2' %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users"></i> Assigned Employees
+            </div>
+            <div class="card-body">
+                {% for employee in assigned_employees %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
+                        <small class="text-muted">EP: {{ employee.ep_number }}</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No employees assigned</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-check"></i> Recent Attendance
+            </div>
+            <div class="card-body">
+                {% for record in recent_attendance %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ record.user.first_name }} {{ record.user.last_name }}</strong>
+                        <small class="text-muted">{{ record.date }}</small>
+                    </div>
+                    <span class="badge status-{{ record.status }} status-badge">{{ record.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No recent attendance</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.role == 'user3' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie"></i> Monthly Attendance Summary
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for status, count in attendance_summary.items %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center">
+                            <div class="stats-number text-primary">{{ count }}</div>
+                            <div class="text-muted">
+                                {% if status == 'P' %}Present
+                                {% elif status == 'A' %}Absent
+                                {% elif status == '-0.5' %}Half Day
+                                {% elif status == '-1' %}Full Deduction
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted text-center mb-0">No attendance records found</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-rocket"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if user.role in 'master,user1' %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'create_user' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus"></i><br>Create User
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'upload_attendance' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-upload"></i><br>Upload Attendance
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'attendance_list' %}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-calendar-check"></i><br>View Attendance
+                        </a>
+                    </div>
+                    {% if user.role != 'user3' %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{% url 'export_attendance' %}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-download"></i><br>Export Data
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

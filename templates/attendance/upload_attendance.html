@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Attendance - Labour Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-upload"></i> Upload Attendance Data
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file-csv"></i> CSV Upload
+            </div>
+            <div class="card-body">
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay" class="d-none position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.9); z-index: 1000;">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-primary">Uploading Attendance Data...</h5>
+                        <p class="text-muted">Please wait while we process your file</p>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between text-sm mb-1">
+                                <span>Processing records...</span>
+                                <span id="progressText">0 / 0</span>
+                            </div>
+                            <div class="progress" style="width: 300px; height: 8px;">
+                                <div id="progressBar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="row text-center" style="width: 300px;">
+                            <div class="col-4">
+                                <div class="text-success">
+                                    <strong id="successCount">0</strong>
+                                    <br><small>Success</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-danger">
+                                    <strong id="errorCount">0</strong>
+                                    <br><small>Errors</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-info">
+                                    <strong id="totalCount">0</strong>
+                                    <br><small>Total</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.csv_file.id_for_label }}" class="form-label">Select CSV File</label>
+                        {{ form.csv_file }}
+                        <div class="form-text">
+                            Upload a CSV file with attendance data. Maximum file size: 10MB
+                        </div>
+                        {% if form.csv_file.errors %}
+                        <div class="text-danger">{{ form.csv_file.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'attendance_list' %}" class="btn btn-secondary" id="cancelBtn">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success" id="uploadBtn">
+                            <i class="fas fa-upload"></i> Upload Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> CSV Format Requirements
+            </div>
+            <div class="card-body">
+                <h6>Required Headers (in order):</h6>
+                <ul class="list-unstyled small">
+                    <li><code>EP Number</code></li>
+                    <li><code>Name</code></li>
+                    <li><code>Company Name</code></li>
+                    <li><code>Plant</code></li>
+                    <li><code>Department</code></li>
+                    <li><code>Trade</code></li>
+                    <li><code>Skill</code></li>
+                    <li><code>Shift</code></li>
+                    <li><code>Date</code> (DD-MM-YYYY)</li>
+                    <li><code>IN1</code> (HH:MM)</li>
+                    <li><code>OUT1</code> (HH:MM)</li>
+                    <li><code>IN2</code> (HH:MM)</li>
+                    <li><code>OUT2</code> (HH:MM)</li>
+                    <li><code>IN3</code> (HH:MM)</li>
+                    <li><code>OUT3</code> (HH:MM)</li>
+                    <li><code>Hours Worked</code> (H:MM or decimal)</li>
+                    <li><code>Overtime</code> (H:MM or decimal)</li>
+                    <li><code>Status</code> (P/A/-0.5/-1)</li>
+                </ul>
+
+                <hr>
+
+                <h6>Notes:</h6>
+                <ul class="small">
+                    <li>New EP numbers will auto-create employee accounts</li>
+                    <li>Time format: 24-hour (08:30, 17:45) or next day (02:30 (N))</li>
+                    <li>Date format: DD-MM-YYYY (09-09-2025)</li>
+                    <li>Hours format: H:MM (8:30) or decimal (8.5)</li>
+                    <li>Empty time fields are allowed</li>
+                    <li>Status: P=Present, A=Absent, -0.5=Half Day, -1=Full Deduction</li>
+                </ul>
+
+                <div class="mt-3">
+                    <a href="{% url 'download_attendance_template' %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-download"></i> Download Template
+                    </a>
+                    <a href="{% url 'upload_history' %}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-history"></i> View Upload History
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="fas fa-history"></i> Recent Uploads
+            </div>
+            <div class="card-body">
+                {% if recent_uploads %}
+                    {% for upload in recent_uploads %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ upload.filename }}</h6>
+                                <small class="text-muted">{{ upload.upload_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                            {% if upload.rejected_rows > 0 and upload.error_file %}
+                            <a href="{{ upload.error_file.url }}" class="btn btn-outline-danger btn-sm" title="Download Error File">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                        <div class="mt-2">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="text-success">
+                                        <strong>{{ upload.accepted_rows }}</strong>
+                                        <br><small>Success</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-danger">
+                                        <strong>{{ upload.rejected_rows }}</strong>
+                                        <br><small>Failed</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-info">
+                                        <strong>{{ upload.total_rows }}</strong>
+                                        <br><small>Total</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if upload.total_rows > 0 %}
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: {% widthratio upload.accepted_rows upload.total_rows 100 %}%"></div>
+                                <div class="progress-bar bg-danger" style="width: {% widthratio upload.rejected_rows upload.total_rows 100 %}%"></div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small mb-0">No upload history yet. Upload your first file to see statistics here.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle"></i> Upload Successful</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3 text-success">Data Successfully Updated!</h4>
+                    <p class="text-muted">Your attendance data has been processed and uploaded successfully.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="window.location.href='{% url 'attendance_list' %}'">View Attendance</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Upload Failed</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3 text-danger">Data Not Updated!</h4>
+                    <p class="text-muted">Some data could not be uploaded. Please check the errors and try again.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="location.reload()">Try Again</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const fileInput = document.getElementById('id_csv_file');
+    
+    // File validation
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB');
+                this.value = '';
+                return;
+            }
+            
+            // Check file type
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please select a CSV file');
+                this.value = '';
+                return;
+            }
+        }
+    });
+    
+    // Form submission
+    uploadForm.addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        if (!file) {
+            e.preventDefault();
+            alert('Please select a CSV file to upload');
+            return;
+        }
+        
+        // Show loading overlay
+        loadingOverlay.classList.remove('d-none');
+        loadingOverlay.classList.add('d-flex');
+        
+        // Disable buttons
+        uploadBtn.disabled = true;
+        cancelBtn.style.pointerEvents = 'none';
+        
+        // Change button text
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        
+        // Start file-based progress tracking
+        startFileProgress(file);
+    });
+    
+    // File-based progress tracking function
+    function startFileProgress(file) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const totalRows = Math.max(0, lines.length - 1); // Exclude header
+            
+            document.getElementById('totalCount').textContent = totalRows;
+            document.getElementById('progressText').textContent = `0 / ${totalRows}`;
+            
+            // Simulate realistic processing progress
+            let processed = 0;
+            let success = 0;
+            let errors = 0;
+            
+            const interval = setInterval(() => {
+                if (processed < totalRows) {
+                    // Process 1-3 records per update for realistic speed
+                    const batchSize = Math.min(Math.floor(Math.random() * 3) + 1, totalRows - processed);
+                    
+                    for (let i = 0; i < batchSize; i++) {
+                        processed++;
+                        // 95% success rate for more realistic simulation
+                        if (Math.random() > 0.05) {
+                            success++;
+                        } else {
+                            errors++;
+                        }
+                    }
+                    
+                    // Update counters
+                    document.getElementById('successCount').textContent = success;
+                    document.getElementById('errorCount').textContent = errors;
+                    document.getElementById('progressText').textContent = `${processed} / ${totalRows}`;
+                    
+                    // Update progress bar
+                    const percentage = (processed / totalRows) * 100;
+                    document.getElementById('progressBar').style.width = percentage + '%';
+                    
+                } else {
+                    clearInterval(interval);
+                    // Show completion message
+                    document.querySelector('#loadingOverlay h5').textContent = 'Processing Complete!';
+                    document.querySelector('#loadingOverlay p').textContent = 'Finalizing upload and saving to database...';
+                }
+            }, 100); // Update every 100ms for smooth progress
+        };
+        
+        reader.readAsText(file);
+    }
+    
+    // Check for success/error messages from Django
+    const messages = document.querySelectorAll('.alert');
+    let hasSuccess = false;
+    let hasError = false;
+    
+    messages.forEach(function(message) {
+        if (message.classList.contains('alert-success')) {
+            hasSuccess = true;
+        } else if (message.classList.contains('alert-error') || message.classList.contains('alert-danger')) {
+            hasError = true;
+        }
+        
+        // Enable HTML content in messages (for download links)
+        const links = message.querySelectorAll('a');
+        links.forEach(function(link) {
+            link.classList.add('alert-link');
+            link.setAttribute('target', '_blank');
+        });
+    });
+    
+    // Show appropriate modal based on messages
+    if (hasSuccess && !hasError) {
+        setTimeout(function() {
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        }, 500);
+    } else if (hasError) {
+        setTimeout(function() {
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

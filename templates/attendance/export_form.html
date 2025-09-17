@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Export Attendance - Labour Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-download"></i> Export Attendance Data
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt"></i> Select Date Range
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">From Date</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">To Date</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Export Format:</strong> Excel (.xlsx) file with formatted headers and auto-adjusted columns.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Export Information
+            </div>
+            <div class="card-body">
+                <h6>What will be exported:</h6>
+                <ul class="small">
+                    <li>Employee details (EP Number, Name, Company)</li>
+                    <li>Work details (Plant, Department, Trade, Skill, Shift)</li>
+                    <li>Attendance data (Date, IN/OUT times)</li>
+                    <li>Hours worked and overtime</li>
+                    <li>Status and remarks</li>
+                </ul>
+
+                <hr>
+
+                <h6>File Format:</h6>
+                <ul class="small">
+                    <li><strong>Format:</strong> Excel (.xlsx)</li>
+                    <li><strong>Headers:</strong> Formatted with blue background</li>
+                    <li><strong>Columns:</strong> Auto-adjusted width</li>
+                    <li><strong>Date Format:</strong> DD-MM-YYYY</li>
+                    <li><strong>Time Format:</strong> HH:MM</li>
+                </ul>
+
+                <hr>
+
+                <h6>Access Level:</h6>
+                {% if user.role == 'master' %}
+                <p class="small text-success">✅ All companies data</p>
+                {% elif user.role == 'user1' %}
+                <p class="small text-info">ℹ️ Your company data only</p>
+                {% elif user.role == 'user2' %}
+                <p class="small text-warning">⚠️ Assigned employees only</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default dates (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+    document.getElementById('start_date').value = thirtyDaysAgo.toISOString().split('T')[0];
+});
+
+// Validate date range
+document.querySelector('form').addEventListener('submit', function(e) {
+    const startDate = new Date(document.getElementById('start_date').value);
+    const endDate = new Date(document.getElementById('end_date').value);
+    
+    if (startDate > endDate) {
+        e.preventDefault();
+        alert('From Date cannot be later than To Date');
+        return false;
+    }
+    
+    const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 365) {
+        if (!confirm('You are exporting more than 1 year of data. This may take some time. Continue?')) {
+            e.preventDefault();
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}
