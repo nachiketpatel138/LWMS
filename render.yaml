@@ -1,7 +1,7 @@
 services:
   - type: web
     name: labour-management
-    runtime: python3
+    runtime: python
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && python manage.py create_master_user"
     startCommand: "gunicorn labour_management.wsgi:application"
     envVars:
