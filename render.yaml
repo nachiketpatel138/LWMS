@@ -14,8 +14,8 @@ services:
       - key: WEB_CONCURRENCY
         value: 4
 
-  - type: pserv
-    name: labour-db
+databases:
+  - name: labour-db
     databaseName: labour_management
-    databaseUser: labour_user
+    user: labour_user
     plan: free
