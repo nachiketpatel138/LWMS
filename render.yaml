@@ -5,17 +5,7 @@ services:
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && python manage.py create_master_user"
     startCommand: "gunicorn labour_management.wsgi:application"
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: labour-db
-          property: connectionString
       - key: SECRET_KEY
         generateValue: true
-      - key: WEB_CONCURRENCY
-        value: 4
-
-databases:
-  - name: labour-db
-    databaseName: labour_management
-    user: labour_user
-    plan: free
+      - key: DEBUG
+        value: "False"
