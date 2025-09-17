@@ -1,8 +1,8 @@
 services:
   - type: web
     name: labour-management
-    env: python
-    buildCommand: "./build.sh"
+    runtime: python3
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate && python manage.py create_master_user"
     startCommand: "gunicorn labour_management.wsgi:application"
     envVars:
       - key: DATABASE_URL
@@ -13,9 +13,9 @@ services:
         generateValue: true
       - key: WEB_CONCURRENCY
         value: 4
+
   - type: pserv
     name: labour-db
-    env: postgresql
-    plan: free
     databaseName: labour_management
     databaseUser: labour_user
+    plan: free
