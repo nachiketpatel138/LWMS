@@ -2,7 +2,7 @@ services:
   - type: web
     name: labour-management
     runtime: python
-    buildCommand: "pip install -r requirements.txt && python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py create_master_user"
+    buildCommand: "pip install -r requirements.txt && python manage.py makemigrations users && python manage.py makemigrations attendance && python manage.py migrate && python manage.py create_master_user && python manage.py collectstatic --no-input"
     startCommand: "gunicorn labour_management.wsgi:application --host 0.0.0.0 --port $PORT"
     envVars:
       - key: SECRET_KEY
@@ -13,3 +13,5 @@ services:
         value: "True"
       - key: SESSION_COOKIE_SECURE
         value: "True"
+      - key: PYTHONUNBUFFERED
+        value: "1"
