@@ -9,3 +9,7 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
