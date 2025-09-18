@@ -11,16 +11,7 @@ function toggleMobileMenu() {
     }
 }
 
-// Quick Actions toggle
-function toggleQuickActions() {
-    const overlay = document.getElementById('quickActionsOverlay');
-    const modal = document.getElementById('quickActionsModal');
-    
-    if (overlay && modal) {
-        overlay.classList.toggle('active');
-        modal.classList.toggle('active');
-    }
-}
+
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

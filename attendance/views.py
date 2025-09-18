@@ -325,6 +325,32 @@ def edit_attendance(request, pk):
 @login_required
 def export_attendance(request):
     if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'delete' and request.user.role == 'master':
+            # Handle delete functionality
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+            
+            if start_date and end_date:
+                deleted_count = AttendanceRecord.objects.filter(date__gte=start_date, date__lte=end_date).count()
+                AttendanceRecord.objects.filter(date__gte=start_date, date__lte=end_date).delete()
+                
+                # Clean up orphaned User3 accounts
+                from users.utils import cleanup_orphaned_user3_accounts
+                deleted_users_count, deleted_usernames = cleanup_orphaned_user3_accounts()
+                
+                message = f'Deleted {deleted_count} attendance records from {start_date} to {end_date}'
+                if deleted_users_count > 0:
+                    message += f' and removed {deleted_users_count} User3 accounts with no remaining attendance: {", ".join(deleted_usernames)}'
+                
+                messages.success(request, message)
+                return redirect('export_attendance')
+            else:
+                messages.error(request, 'Both start date and end date are required for deletion.')
+                return redirect('export_attendance')
+        
+        # Handle export functionality
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill
         
@@ -414,8 +440,27 @@ def export_attendance(request):
         wb.save(response)
         return response
     
-    # Show export form
-    return render(request, 'attendance/export_form.html')
+    # Show export form with record count for date range
+    context = {}
+    if request.GET.get('start_date') and request.GET.get('end_date'):
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        if request.user.role == 'master':
+            record_count = AttendanceRecord.objects.filter(date__gte=start_date, date__lte=end_date).count()
+        elif request.user.role == 'user1':
+            record_count = AttendanceRecord.objects.filter(user__company_name=request.user.company_name, date__gte=start_date, date__lte=end_date).count()
+        elif request.user.role == 'user2':
+            assigned_employees = SupervisorAssignment.objects.filter(supervisor=request.user).values_list('employee', flat=True)
+            record_count = AttendanceRecord.objects.filter(user__id__in=assigned_employees, date__gte=start_date, date__lte=end_date).count()
+        else:
+            record_count = 0
+        
+        context['record_count'] = record_count
+        context['start_date'] = start_date
+        context['end_date'] = end_date
+    
+    return render(request, 'attendance/export_form.html', context)
 
 @login_required
 def download_attendance_template(request):
@@ -423,10 +468,34 @@ def download_attendance_template(request):
     response['Content-Disposition'] = 'attachment; filename="attendance_template.csv"'
     
     writer = csv.writer(response)
+    # Write headers
     writer.writerow(['EP Number', 'Name', 'Company Name', 'Plant', 'Department', 'Trade', 'Skill', 'Shift', 'Date', 'IN1', 'OUT1', 'IN2', 'OUT2', 'IN3', 'OUT3', 'Hours Worked', 'Overtime', 'Status'])
+    
+    # Add sample rows with different scenarios
     writer.writerow(['EMP001', 'John Doe', 'ABC Company', 'Plant 1', 'Production', 'Welder', 'Skilled', 'Day', '01-01-2024', '08:00', '17:00', '', '', '', '', '8:00', '0:00', 'P'])
     writer.writerow(['EMP002', 'Jane Smith', 'ABC Company', 'Plant 1', 'Quality', 'Inspector', 'Semi-Skilled', 'Night', '01-01-2024', '22:30', '06:30 (N)', '', '', '', '', '8:00', '0:00', 'P'])
     writer.writerow(['EMP003', 'Mike Johnson', 'XYZ Corp', 'Plant 2', 'Maintenance', 'Technician', 'Skilled', 'Day', '01-01-2024', '', '', '', '', '', '', '0:00', '0:00', 'A'])
+    writer.writerow(['EMP004', 'Sarah Wilson', 'ABC Company', 'Plant 1', 'Production', 'Operator', 'Semi-Skilled', 'Day', '01-01-2024', '08:00', '12:00', '', '', '', '', '4:00', '0:00', '-0.5'])
+    writer.writerow(['EMP005', 'David Brown', 'XYZ Corp', 'Plant 2', 'Quality', 'Supervisor', 'Skilled', 'Day', '01-01-2024', '07:30', '18:30', '', '', '', '', '8:00', '3:00', 'P'])
+    
+    # Add empty rows for user to fill
+    for i in range(10):
+        writer.writerow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''])
+    
+    return response
+
+@login_required
+def download_empty_attendance_template(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="empty_attendance_template.csv"'
+    
+    writer = csv.writer(response)
+    # Write only headers
+    writer.writerow(['EP Number', 'Name', 'Company Name', 'Plant', 'Department', 'Trade', 'Skill', 'Shift', 'Date', 'IN1', 'OUT1', 'IN2', 'OUT2', 'IN3', 'OUT3', 'Hours Worked', 'Overtime', 'Status'])
+    
+    # Add 50 empty rows for user to fill
+    for i in range(50):
+        writer.writerow(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''])
     
     return response
 

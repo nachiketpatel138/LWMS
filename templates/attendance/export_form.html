@@ -1,46 +1,67 @@
 {% extends 'base.html' %}
 
-{% block title %}Export Attendance - Labour Management{% endblock %}
+{% block title %}Reports & Data Management - Labour Management{% endblock %}
+
+{% block page_title %}Reports & Data Management{% endblock %}
 
 {% block content %}
+<style>
+.card-header.bg-danger {
+    background-color: #dc3545 !important;
+}
+.card-header.bg-success {
+    background-color: #198754 !important;
+}
+</style>
 <div class="row">
     <div class="col-12">
-        <h2 class="mb-4">
-            <i class="fas fa-download"></i> Export Attendance Data
-        </h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-chart-bar"></i> Reports & Data Management
+            </h2>
+        </div>
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-calendar-alt"></i> Select Date Range
+        <!-- Export Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-download"></i> Export Attendance Data
             </div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" id="exportForm">
                     {% csrf_token %}
+                    <input type="hidden" name="action" value="export">
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="start_date" class="form-label">From Date</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" required>
+                            <label for="export_start_date" class="form-label">From Date</label>
+                            <input type="date" name="start_date" id="export_start_date" class="form-control" value="{{ start_date }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="end_date" class="form-label">To Date</label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" required>
+                            <label for="export_end_date" class="form-label">To Date</label>
+                            <input type="date" name="end_date" id="export_end_date" class="form-control" value="{{ end_date }}" required>
                         </div>
                     </div>
 
+                    {% if record_count is not None %}
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> 
+                        <strong>{{ record_count }}</strong> records found for the selected date range.
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-success">
+                        <i class="fas fa-file-excel"></i> 
                         <strong>Export Format:</strong> Excel (.xlsx) file with formatted headers and auto-adjusted columns.
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Cancel
-                        </a>
+                        <button type="button" class="btn btn-info" onclick="previewRecords()">
+                            <i class="fas fa-eye"></i> Preview Records
+                        </button>
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-file-excel"></i> Export to Excel
                         </button>
@@ -48,10 +69,51 @@
                 </form>
             </div>
         </div>
+
+        {% if user.role == 'master' %}
+        <!-- Delete Section -->
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-trash"></i> Delete Attendance Data
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This action will permanently delete attendance records and cannot be undone.
+                </div>
+                
+                <form method="post" id="deleteForm" onsubmit="return confirmDelete()">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="delete_start_date" class="form-label">From Date</label>
+                            <input type="date" name="start_date" id="delete_start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="delete_end_date" class="form-label">To Date</label>
+                            <input type="date" name="end_date" id="delete_end_date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-warning" onclick="previewDeleteRecords()">
+                            <i class="fas fa-eye"></i> Preview Records to Delete
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Records
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="col-md-4">
-        <div class="card">
+        <!-- Export Information -->
+        <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-info-circle"></i> Export Information
             </div>
@@ -88,6 +150,39 @@
                 {% endif %}
             </div>
         </div>
+
+        {% if user.role == 'master' %}
+        <!-- Delete Information -->
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-exclamation-triangle"></i> Delete Information
+            </div>
+            <div class="card-body">
+                <h6 class="text-danger">What will be deleted:</h6>
+                <ul class="small">
+                    <li>All attendance records in date range</li>
+                    <li>Orphaned User3 accounts (employees with no remaining attendance)</li>
+                </ul>
+
+                <hr>
+
+                <h6 class="text-warning">Important Notes:</h6>
+                <ul class="small">
+                    <li><strong>Permanent:</strong> Cannot be undone</li>
+                    <li><strong>Cascading:</strong> Removes related data</li>
+                    <li><strong>Preview:</strong> Always preview before deleting</li>
+                    <li><strong>Backup:</strong> Export data before deletion</li>
+                </ul>
+
+                <hr>
+
+                <div class="alert alert-danger small mb-0">
+                    <i class="fas fa-shield-alt"></i>
+                    <strong>Master User Only:</strong> Only master users can delete data for security.
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -97,14 +192,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
     
-    document.getElementById('end_date').value = today.toISOString().split('T')[0];
-    document.getElementById('start_date').value = thirtyDaysAgo.toISOString().split('T')[0];
+    // Set export form defaults
+    if (!document.getElementById('export_start_date').value) {
+        document.getElementById('export_end_date').value = today.toISOString().split('T')[0];
+        document.getElementById('export_start_date').value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
 });
 
-// Validate date range
-document.querySelector('form').addEventListener('submit', function(e) {
-    const startDate = new Date(document.getElementById('start_date').value);
-    const endDate = new Date(document.getElementById('end_date').value);
+// Validate export form
+document.getElementById('exportForm').addEventListener('submit', function(e) {
+    const startDate = new Date(document.getElementById('export_start_date').value);
+    const endDate = new Date(document.getElementById('export_end_date').value);
     
     if (startDate > endDate) {
         e.preventDefault();
@@ -120,5 +218,69 @@ document.querySelector('form').addEventListener('submit', function(e) {
         }
     }
 });
+
+// Preview records function
+function previewRecords() {
+    const startDate = document.getElementById('export_start_date').value;
+    const endDate = document.getElementById('export_end_date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('From Date cannot be later than To Date');
+        return;
+    }
+    
+    // Redirect to preview with date parameters
+    window.location.href = `?start_date=${startDate}&end_date=${endDate}`;
+}
+
+// Preview delete records function
+function previewDeleteRecords() {
+    const startDate = document.getElementById('delete_start_date').value;
+    const endDate = document.getElementById('delete_end_date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('From Date cannot be later than To Date');
+        return;
+    }
+    
+    // Redirect to preview with date parameters
+    window.location.href = `?start_date=${startDate}&end_date=${endDate}`;
+}
+
+// Confirm delete function
+function confirmDelete() {
+    const startDate = document.getElementById('delete_start_date').value;
+    const endDate = document.getElementById('delete_end_date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return false;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('From Date cannot be later than To Date');
+        return false;
+    }
+    
+    const confirmMessage = `Are you sure you want to DELETE all attendance records from ${startDate} to ${endDate}?\n\nThis action cannot be undone!\n\nType 'DELETE' to confirm:`;
+    const userInput = prompt(confirmMessage);
+    
+    if (userInput !== 'DELETE') {
+        alert('Deletion cancelled. You must type "DELETE" exactly to confirm.');
+        return false;
+    }
+    
+    return confirm(`Final confirmation: Delete all attendance records from ${startDate} to ${endDate}?`);
+}
 </script>
 {% endblock %}
