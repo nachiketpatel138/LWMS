@@ -13,9 +13,9 @@ ALLOWED_HOSTS = ['*']
 # CSRF settings for production
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
-    'https://*.web.app',
-    'https://*.firebaseapp.com',
 ]
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
