@@ -2,7 +2,7 @@ services:
   - type: web
     name: labour-management
     runtime: python
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate --run-syncdb && python manage.py create_master_user --noinput"
+    buildCommand: "pip install -r requirements.txt && python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py create_master_user"
     startCommand: "gunicorn labour_management.wsgi:application --host 0.0.0.0 --port $PORT"
     envVars:
       - key: SECRET_KEY

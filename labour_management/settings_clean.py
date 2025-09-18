@@ -10,7 +10,6 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
-# CSRF settings for production
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
     'https://*.web.app',
@@ -64,32 +63,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'labour_management.wsgi.application'
 
-# Database configuration - PostgreSQL only
+# Database - Supabase PostgreSQL
 DATABASES = {
     'default': dj_database_url.parse(
         os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
     )
 }
-
-# API Configuration
-INSTALLED_APPS += [
-    'rest_framework',
-    'corsheaders',
-]
-
-MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
-
-# CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:4200",
-    "https://your-app.web.app",
-]
-
-CORS_ALLOW_ALL_ORIGINS = True  # For development
-
-# Remove static files for API
-STATICFILES_STORAGE = None
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -103,42 +82,9 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# WhiteNoise configuration
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# No static files for API
+STATIC_URL = None
+STATIC_ROOT = None
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 AUTH_USER_MODEL = 'users.User'
-
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
-
-# Logging configuration for production debugging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
