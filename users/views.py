@@ -73,7 +73,7 @@ def dashboard(request):
             'attendance_summary': {}
         })
     
-    return render(request, 'users/dashboard.html', context)
+    return render(request, 'users/dashboard_simple.html', context)
 
 @login_required
 def create_user(request):
