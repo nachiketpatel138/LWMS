@@ -4,7 +4,9 @@
 
 {% block page_title %}
 <i class="fas fa-tachometer-alt"></i> Dashboard
+{% if user.role != 'user3' %}
 <small class="text-muted ms-2">{{ user.get_role_display }}</small>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -140,14 +142,14 @@
 {% endif %}
 
 {% if user.role == 'user3' %}
-<div class="row mb-4">
+<div class="row mb-4 justify-content-center">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header text-center">
                 <i class="fas fa-chart-pie"></i> Monthly Attendance Summary
             </div>
-            <div class="card-body">
-                <div class="row">
+            <div class="card-body text-center">
+                <div class="row justify-content-center">
                     {% for status, count in attendance_summary.items %}
                     <div class="col-md-3 col-6 mb-3">
                         <div class="text-center">
@@ -167,12 +169,18 @@
                     </div>
                     {% endfor %}
                 </div>
+                <div class="mt-4">
+                    <a href="{% url 'attendance_list' %}" class="btn btn-primary">
+                        <i class="fas fa-calendar-check"></i> View My Attendance Records
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
 
+{% if user.role != 'user3' %}
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -198,16 +206,15 @@
                             <i class="fas fa-calendar-check"></i><br>View Attendance
                         </a>
                     </div>
-                    {% if user.role != 'user3' %}
                     <div class="col-md-3 col-6 mb-3">
                         <a href="{% url 'export_attendance' %}" class="btn btn-outline-warning w-100">
                             <i class="fas fa-download"></i><br>Export Data
                         </a>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
