@@ -18,10 +18,17 @@ def login_view(request):
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user:
-                login(request, user)
-                return redirect('dashboard')
+            try:
+                user = authenticate(username=username, password=password)
+                if user:
+                    login(request, user)
+                    return redirect('dashboard')
+                else:
+                    messages.error(request, 'Invalid username or password.')
+            except Exception as e:
+                messages.error(request, 'Login failed. Please try again.')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomLoginForm()
     return render(request, 'users/login.html', {'form': form})
@@ -31,27 +38,40 @@ def dashboard(request):
     user = request.user
     context = {'user': user}
     
-    if user.role == 'master':
+    try:
+        if user.role == 'master':
+            context.update({
+                'total_companies': User.objects.filter(role='user1').values('company_name').distinct().count(),
+                'total_users': User.objects.count(),
+                'recent_uploads': AttendanceRecord.objects.select_related('user').order_by('-created_at')[:10]
+            })
+        elif user.role == 'user1':
+            context.update({
+                'company_employees': User.objects.filter(company_name=user.company_name, role='user3').count(),
+                'company_supervisors': User.objects.filter(company_name=user.company_name, role='user2').count(),
+                'recent_attendance': AttendanceRecord.objects.filter(user__company_name=user.company_name).order_by('-date')[:10]
+            })
+        elif user.role == 'user2':
+            assigned_employees = SupervisorAssignment.objects.filter(supervisor=user).values_list('employee', flat=True)
+            context.update({
+                'assigned_employees': User.objects.filter(id__in=assigned_employees),
+                'recent_attendance': AttendanceRecord.objects.filter(user__id__in=assigned_employees).order_by('-date')[:10]
+            })
+        elif user.role == 'user3':
+            attendance_summary = AttendanceRecord.objects.filter(user=user).values('status').annotate(count=Count('status'))
+            context['attendance_summary'] = {item['status']: item['count'] for item in attendance_summary}
+    except Exception as e:
+        # Fallback for any database errors
         context.update({
-            'total_companies': User.objects.filter(role='user1').values('company_name').distinct().count(),
-            'total_users': User.objects.count(),
-            'recent_uploads': AttendanceRecord.objects.select_related('user').order_by('-created_at')[:10]
+            'total_companies': 0,
+            'total_users': 0,
+            'recent_uploads': [],
+            'company_employees': 0,
+            'company_supervisors': 0,
+            'recent_attendance': [],
+            'assigned_employees': [],
+            'attendance_summary': {}
         })
-    elif user.role == 'user1':
-        context.update({
-            'company_employees': User.objects.filter(company_name=user.company_name, role='user3').count(),
-            'company_supervisors': User.objects.filter(company_name=user.company_name, role='user2').count(),
-            'recent_attendance': AttendanceRecord.objects.filter(user__company_name=user.company_name).order_by('-date')[:10]
-        })
-    elif user.role == 'user2':
-        assigned_employees = SupervisorAssignment.objects.filter(supervisor=user).values_list('employee', flat=True)
-        context.update({
-            'assigned_employees': User.objects.filter(id__in=assigned_employees),
-            'recent_attendance': AttendanceRecord.objects.filter(user__id__in=assigned_employees).order_by('-date')[:10]
-        })
-    elif user.role == 'user3':
-        attendance_summary = AttendanceRecord.objects.filter(user=user).values('status').annotate(count=Count('status'))
-        context['attendance_summary'] = {item['status']: item['count'] for item in attendance_summary}
     
     return render(request, 'users/dashboard.html', context)
 
