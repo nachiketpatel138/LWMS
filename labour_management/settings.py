@@ -23,15 +23,14 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'rest_framework',
-    'corsheaders',
+    'django.contrib.staticfiles',
     'users',
     'attendance',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -39,10 +38,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'labour_management.urls'
 
@@ -64,32 +59,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'labour_management.wsgi.application'
 
-# Database configuration - PostgreSQL only
+# Database configuration
 DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
-
-# API Configuration
-INSTALLED_APPS += [
-    'rest_framework',
-    'corsheaders',
-]
-
-MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
-
-# CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:4200",
-    "https://your-app.web.app",
-]
-
-CORS_ALLOW_ALL_ORIGINS = True  # For development
-
-# Remove static files for API
-STATICFILES_STORAGE = None
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
